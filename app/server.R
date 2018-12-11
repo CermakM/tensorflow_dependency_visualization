@@ -102,8 +102,48 @@ apply_centrality_measure <- function(g, measure) {
   
   return(g)
 }
+  
 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
+  
+  IGNORE_WARNING <<- F
+  SHINY__EVENT_OBSERVER_OVERRIDE <<- F
+  
+  warning.grouped_unchecked <- modalDialog(
+    title="Warning: `grouped` is unchecked.",
+    span("Force graphs may slow down your browser.",
+         "It is recommended to use `threejs` backend for ungrouped data.",
+         "Proceed on your own responsibility."),
+    easyClose=T,
+    footer = tagList(
+      modalButton("Dismiss."),
+      actionButton("ignore_warning", "Proceed anyway.")
+    )
+  )
+  
+  # observe usage of ungrouped data when threejs is not used
+  observeEvent(c(input$grouped, input$plot_kind), {
+    
+    if (SHINY__EVENT_OBSERVER_OVERRIDE) {
+      
+      SHINY__EVENT_OBSERVER_OVERRIDE <<- F
+    }
+    
+    else if (!input$grouped && input$plot_kind != 'threejs') {
+      showModal(warning.grouped_unchecked)
+      
+      updateCheckboxInput(session, 'grouped', value=T)
+    }
+  })
+    
+  observeEvent(input$ignore_warning, {
+    # user chose his faith
+    IGNORE_WARNING <<- T
+    SHINY__EVENT_OBSERVER_OVERRIDE <<- T
+    
+    updateCheckboxInput(session, 'grouped', value=F)
+    removeModal()
+  }) 
   
   output$network <- renderUI({
     
@@ -125,7 +165,7 @@ shinyServer(function(input, output) {
     
     .graph <- apply_centrality_measure(.graph, input$centrality)
     
-    if (input$plot_kind == 'force') {
+    if (input$plot_kind == 'force' && (input$grouped || IGNORE_WARNING)) {
       
       d3.links <- igraph_to_networkD3(.graph, what='links')
       
@@ -135,15 +175,19 @@ shinyServer(function(input, output) {
                      Group='package_name', zoom=T, bounded=F)
       )
       
+      IGNORE_WARNING <<- F  # ignore the warning only once per approval
+      
       forceNetworkOutput('force')
       
-    } else if (input$plot_kind == 'diagonal') {
+    } else if (input$plot_kind == 'diagonal' && (input$grouped || IGNORE_WARNING)) {
       
       # Diagonal Network
       
       output$diagonal <- renderDiagonalNetwork(
         diagonalNetwork(ToListExplicit(FromDataFrameNetwork(.dataframe), unname=T))
       )
+    
+      IGNORE_WARNING <<- F  # ignore the warning only once per approval
       
       diagonalNetworkOutput('diagonal')
       
@@ -158,6 +202,5 @@ shinyServer(function(input, output) {
       
       scatterplotThreeOutput('threejs')
     }
-    
   })
 })
