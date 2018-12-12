@@ -29,7 +29,11 @@ shinyUI(fluidPage(
         choices=c('threejs', 'force', 'diagonal'), selected='force',
         multiple=F
       ),
-      checkboxInput('grouped', 'Group versions', value=T)
+    
+      fluidRow(
+        column(6, checkboxInput('grouped', 'Group versions', value=T)),
+        column(6, checkboxInput('labels', 'Toggle labels', value=F))
+      )
     ),
     
     # Show a plot of the generated distribution

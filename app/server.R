@@ -169,10 +169,13 @@ shinyServer(function(input, output, session) {
       
       d3.links <- igraph_to_networkD3(.graph, what='links')
       
+      display.labels <- if (input$labels) 0.75 else 0
+      
       output$force <- renderForceNetwork(
         forceNetwork(Links=d3.links, Source='source', Target='target',
                      Nodes=.nodes, NodeID='package_name', #Nodesize='size',
-                     Group='package_name', zoom=T, bounded=F, opacityNoHover=0.5)
+                     Group='package_name', zoom=T, bounded=F,
+                     opacityNoHover=display.labels)
       )
       
       IGNORE_WARNING <<- F  # ignore the warning only once per approval
@@ -182,6 +185,7 @@ shinyServer(function(input, output, session) {
     } else if (input$plot_kind == 'diagonal' && (input$grouped || IGNORE_WARNING)) {
       
       # Diagonal Network
+      updateCheckboxInput(session, 'labels', value=T)  # default
       
       output$diagonal <- renderDiagonalNetwork(
         diagonalNetwork(ToListExplicit(FromDataFrameNetwork(.dataframe), unname=T))
@@ -195,10 +199,19 @@ shinyServer(function(input, output, session) {
       
       # threejs
       
-      output$threejs <- renderScatterplotThree(
-        graphjs(.graph, vertex.label = vertex_attr(.graph, 'package_name'),
-                edge.alpha=0.4)
-      )
+      if (input$labels) {
+        
+        output$threejs <- renderScatterplotThree(
+          graphjs(.graph, vertex.label = vertex_attr(.graph, 'package_name'),
+                  edge.alpha=0.4) %>%
+          points3d(vertices(.), pch=V(.graph)$package_name, size=0.1, color='orange'))
+        
+      } else {
+        
+        output$threejs <- renderScatterplotThree(
+          graphjs(.graph, vertex.label = vertex_attr(.graph, 'package_name'),
+                  edge.alpha=0.4))
+      }
       
       scatterplotThreeOutput('threejs')
     }
