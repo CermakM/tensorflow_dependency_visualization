@@ -78,6 +78,7 @@ df.grouped.nodes <- right_join(df.grouped.nodes, col_palette, by='package_name')
 
 net.grouped <- graph_from_data_frame(df.grouped, vertices=df.grouped.nodes)
 net.grouped <- simplify(net.grouped, remove.multiple=T, remove.loops=T)
+
 V(net.grouped)$package_name = V(net.grouped)$name
 
 ### DEBUG 
@@ -169,13 +170,15 @@ shinyServer(function(input, output, session) {
       
       d3.links <- igraph_to_networkD3(.graph, what='links')
       
+      .nodes$size <- V(.graph)$size * input$centrality_impact
+      
       display.labels <- if (input$labels) 0.75 else 0
       
       output$force <- renderForceNetwork(
         forceNetwork(Links=d3.links, Source='source', Target='target',
-                     Nodes=.nodes, NodeID='package_name', #Nodesize='size',
-                     Group='package_name', zoom=T, bounded=F,
-                     opacityNoHover=display.labels)
+                     Nodes=.nodes, NodeID='package_name', Nodesize='size',
+                     Group='package_name',
+                     charge=input$charge, zoom=T, bounded=F, opacityNoHover=display.labels)
       )
       
       IGNORE_WARNING <<- F  # ignore the warning only once per approval
@@ -198,6 +201,8 @@ shinyServer(function(input, output, session) {
     } else {  # default
       
       # threejs
+        
+      V(.graph)$size <- V(.graph)$size * input$centrality_impact
       
       if (input$labels) {
         
@@ -215,5 +220,15 @@ shinyServer(function(input, output, session) {
       
       scatterplotThreeOutput('threejs')
     }
+  })
+  
+  output$about <- renderText({
+    paste0("Sorry, this is yet to be implemented.",
+           "\n\nMeanwhile see the slides at https://slides.com/marekcermak/tensorflow-dependencies/live#/")
+  })
+  
+  output$credits <- renderText({
+    paste0("Author: Marek Cermak <macermak@redhat.com>",
+           "\n\nSource: https://github.com/CermakM/tensorflow_dependency_visualization")
   })
 })
