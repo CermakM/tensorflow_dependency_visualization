@@ -172,7 +172,7 @@ shinyServer(function(input, output, session) {
       output$force <- renderForceNetwork(
         forceNetwork(Links=d3.links, Source='source', Target='target',
                      Nodes=.nodes, NodeID='package_name', #Nodesize='size',
-                     Group='package_name', zoom=T, bounded=F)
+                     Group='package_name', zoom=T, bounded=F, opacityNoHover=0.5)
       )
       
       IGNORE_WARNING <<- F  # ignore the warning only once per approval

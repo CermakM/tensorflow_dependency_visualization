@@ -26,7 +26,7 @@ shinyUI(fluidPage(
       ),
       selectInput(
         'plot_kind',  'Kind of Plot', 
-        choices=c('threejs', 'force', 'diagonal'), selected='threejs',
+        choices=c('threejs', 'force', 'diagonal'), selected='force',
         multiple=F
       ),
       checkboxInput('grouped', 'Group versions', value=T)
